@@ -5,9 +5,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logiology/controllers/home_controller.dart';
 import 'package:logiology/controllers/login_controller.dart';
+import 'package:logiology/routes/app_routes.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final HomeController profileController = Get.put(HomeController());
+  final HomeController homeController = Get.put(HomeController());
   final LoginController loginController = Get.put(LoginController());
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -16,8 +18,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    usernameController.text = profileController.username.value;
-    passwordController.text = profileController.password.value;
+    usernameController.text = homeController.username.value;
+    passwordController.text = homeController.password.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +45,7 @@ class ProfileScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Profile Image Section
-      
+
             // Username Section
             Card(
               color: Colors.white,
@@ -59,7 +61,7 @@ class ProfileScreen extends StatelessWidget {
                     Center(
                       child: Obx(() {
                         final imagePath =
-                            profileController.profileImagePath.value;
+                            homeController.profileImagePath.value;
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: 120,
@@ -141,23 +143,21 @@ class ProfileScreen extends StatelessWidget {
                           String newUsername = usernameController.text.trim();
                           String newPassword = passwordController.text.trim();
                           bool updated = false;
-      
+
                           // Update username if changed
                           if (newUsername.isNotEmpty &&
-                              newUsername !=
-                                  profileController.username.value) {
-                            profileController.updateUsername(newUsername);
+                              newUsername != homeController.username.value) {
+                            homeController.updateUsername(newUsername);
                             updated = true;
                           }
-      
+
                           // Update password if changed
                           if (newPassword.isNotEmpty &&
-                              newPassword !=
-                                  profileController.password.value) {
-                            profileController.updatePassword(newPassword);
+                              newPassword != homeController.password.value) {
+                            homeController.updatePassword(newPassword);
                             updated = true;
                           }
-      
+
                           // Show snackbar if any update was made
                           if (updated) {
                             Get.snackbar(
@@ -189,13 +189,13 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-      Spacer(),
+            Spacer(),
             // Logout Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  loginController.logout();
+                onPressed: () async {
+                  // Show the snackbar first
                   Get.snackbar(
                     'Success',
                     'Logged out successfully',
@@ -203,8 +203,18 @@ class ProfileScreen extends StatelessWidget {
                     backgroundColor: Colors.green,
                     colorText: Colors.white,
                   );
+
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('isLoggedIn', false);
+
+                  Get.delete<LoginController>(); // ✅ Dispose properly
+                  Get.offAllNamed(AppRoutes.login); // ✅ Triggers LoginBinding
                 },
-                icon: const Icon(Icons.logout, size: 20,color: Colors.white,),
+                icon: const Icon(
+                  Icons.logout,
+                  size: 20,
+                  color: Colors.white,
+                ),
                 label: const Text(
                   'Log Out',
                   style: TextStyle(fontSize: 15),
@@ -277,7 +287,7 @@ class ProfileScreen extends StatelessWidget {
               leading: const Icon(Icons.photo_library),
               title: const Text('Gallery'),
               onTap: () {
-                profileController.updateProfileImage(ImageSource.gallery);
+                homeController.updateProfileImage(ImageSource.gallery);
                 Get.back();
               },
             ),
@@ -285,7 +295,7 @@ class ProfileScreen extends StatelessWidget {
               leading: const Icon(Icons.camera_alt),
               title: const Text('Camera'),
               onTap: () {
-                profileController.updateProfileImage(ImageSource.camera);
+                homeController.updateProfileImage(ImageSource.camera);
                 Get.back();
               },
             ),

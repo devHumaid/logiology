@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logiology/routes/app_routes.dart';
+import 'package:logiology/screens/filter_popup.dart';
 
 import '../controllers/home_controller.dart';
 
@@ -53,7 +56,12 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                     Spacer(),
-                                    Icon(Icons.tune, color: Colors.grey[400]),
+                                    GestureDetector(
+                                        onTap: () {
+                                          showFilterDialog(context);
+                                        },
+                                        child: Icon(Icons.tune,
+                                            color: Colors.grey[400])),
                                   ],
                                 ),
                               ),
@@ -62,14 +70,28 @@ class HomeScreen extends StatelessWidget {
                           SizedBox(width: 12),
                           GestureDetector(
                             onTap: () {
-                              Get.toNamed(AppRoutes.profile);
+                              Get.toNamed(AppRoutes
+                                  .profile); // Navigate to the profile page
                             },
-                            child: CircleAvatar(
-                              radius: 25,
-                              backgroundColor: Colors.grey[200],
-                              child: Icon(Icons.person,
-                                  size: 20, color: Colors.grey[700]),
-                            ),
+                            child: Obx(() {
+                              final imagePath =
+                                  homeController.profileImagePath.value;
+
+                              return CircleAvatar(
+                                radius: 25,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage: imagePath.isNotEmpty
+                                    ? FileImage(File(imagePath))
+                                    : null, // If imagePath is empty, don't show a background image
+                                child: imagePath.isEmpty
+                                    ? Icon(
+                                        Icons.person,
+                                        size: 20,
+                                        color: Colors.grey[700],
+                                      )
+                                    : null, // If there's no image, show the default icon
+                              );
+                            }),
                           ),
                         ],
                       ),
@@ -247,87 +269,103 @@ class HomeScreen extends StatelessWidget {
               SliverPadding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final product = homeController.products[index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 4,
-                              offset: Offset(2, 2),
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12)),
-                              child: Image.network(
-                                product.thumbnail,
-                                height: 110,
-                                width: double.infinity,
-                                fit: BoxFit.fill,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.broken_image),
+                sliver: Obx(() {
+                  if (homeController.isLoading.value) {
+                    return SliverToBoxAdapter(
+                      child: Center(
+                          child:
+                              CircularProgressIndicator()), // Show loading indicator
+                    );
+                  }
+
+                  // If products are filtered, show filtered list, else show all products
+                  final productsToShow =
+                      homeController.filteredProducts.isNotEmpty
+                          ? homeController.filteredProducts
+                          : homeController.products;
+
+                  return SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = productsToShow[index];
+                        return Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(2, 2),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    "\$${product.price}",
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.green,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.star,
-                                          color: Colors.amber, size: 18),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        product.rating.toString(),
-                                        style: const TextStyle(fontSize: 14),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12)),
+                                child: Image.network(
+                                  product.thumbnail,
+                                  height: 110,
+                                  width: double.infinity,
+                                  fit: BoxFit.fill,
+                                  errorBuilder: (_, __, ___) =>
+                                      const Icon(Icons.broken_image),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
                                       ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "\$${product.price}",
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.star,
+                                            color: Colors.amber, size: 18),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          product.rating.toString(),
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    childCount: homeController.products.length,
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: width < 600 ? 2 : 4,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.7,
-                  ),
-                ),
+                            ],
+                          ),
+                        );
+                      },
+                      childCount: productsToShow.length,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: width < 600 ? 2 : 4,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.7,
+                    ),
+                  );
+                }),
               ),
             ],
           );

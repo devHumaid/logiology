@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:logiology/controllers/home_controller.dart';
 import 'package:logiology/screens/profile_screen.dart';
+import 'package:logiology/services/login_binding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logiology/routes/app_routes.dart';
 import 'package:logiology/screens/home_screen.dart';
@@ -9,6 +11,7 @@ import 'package:logiology/screens/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final initialRoute = await _getInitialRoute();
+  Get.put(HomeController()); 
   runApp(MyApp(initialRoute: initialRoute));
 }
 
@@ -24,6 +27,11 @@ class MyApp extends StatelessWidget {
       title: 'LOGIOLOGY',
       initialRoute: initialRoute,
       getPages: [
+        GetPage(
+          name: AppRoutes.login,
+          page: () => LoginScreen(),
+          binding: LoginBinding(),
+        ),
         GetPage(name: AppRoutes.login, page: () => LoginScreen()),
         GetPage(name: AppRoutes.home, page: () => HomeScreen()),
         GetPage(name: AppRoutes.profile, page: () => ProfileScreen()),

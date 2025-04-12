@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logiology/model/product_model.dart';
@@ -10,11 +11,17 @@ class HomeController extends GetxController {
   var products = <ProductModel>[].obs;
   var isLoading = false.obs;
   var filteredProducts = <ProductModel>[].obs;
+  var categories = <String>[].obs;
+    RxDouble selectedMaxPrice = 500.0.obs;  // Default value is 500
+
+
   final RxInt selectedCategory = 0.obs;
   final RxInt selectedColor = 0.obs;
   final RxBool isFavorite = false.obs;
+  final RxList<String> enteredTags = <String>[].obs;
 
-  final List<String> categories = ['Chairs', 'Tables', 'Sofas', 'Beds'];
+  final tagInputController = TextEditingController();
+
   final List<Color> colorOptions = [
     Color(0xFFD9A8A8), // Light pink
     Color(0xFF89A98C), // Sage green
@@ -32,19 +39,25 @@ class HomeController extends GetxController {
   void setColor(int index) {
     selectedColor.value = index;
   }
+
   @override
   void onInit() {
     super.onInit();
     loadProducts();
     loadUserProfile();
   }
-  
+
   Future<void> loadProducts() async {
     try {
       isLoading.value = true;
       var fetchedProducts = await ApiService.fetchProducts();
       products.assignAll(fetchedProducts);
       filteredProducts.assignAll(fetchedProducts);
+
+      // Extract unique categories from fetched products
+      final uniqueCategories =
+          fetchedProducts.map((product) => product.category).toSet().toList();
+      categories.assignAll(uniqueCategories);
     } catch (e) {
       print('Error loading products: $e');
     } finally {
@@ -52,19 +65,40 @@ class HomeController extends GetxController {
     }
   }
 
-  void filterProducts(
-      {String? category, String? tag, double? minPrice, double? maxPrice}) {
+  // Filter products based on category, tag, and price range
+
+  void addTag(String tag) {
+    if (tag.trim().isNotEmpty && !enteredTags.contains(tag.trim())) {
+      enteredTags.add(tag.trim());
+      tagInputController.clear();
+    }
+  }
+
+  void removeTag(String tag) {
+    enteredTags.remove(tag);
+  }
+
+  void filterProducts({String? category, String? tag, double? maxPrice}) {
     var tempProducts = products.where((product) {
       final matchesCategory = category == null || product.category == category;
       final matchesTag = tag == null || product.tags.contains(tag);
-      final matchesMinPrice = minPrice == null || product.price >= minPrice;
       final matchesMaxPrice = maxPrice == null || product.price <= maxPrice;
-      return matchesCategory &&
-          matchesTag &&
-          matchesMinPrice &&
-          matchesMaxPrice;
+      return matchesCategory && matchesTag && matchesMaxPrice;
     }).toList();
     filteredProducts.assignAll(tempProducts);
+  }
+
+  // Apply filters based on selected criteria
+  void applyFilters({
+    String? category,
+    String? tag,
+    double? maxPrice,
+  }) {
+    filterProducts(
+      category: category,
+      tag: tag,
+      maxPrice: maxPrice,
+    );
   }
 
   // PROFILE
@@ -100,4 +134,11 @@ class HomeController extends GetxController {
       await prefs.setString('profileImagePath', pickedFile.path);
     }
   }
+  void clearFilters() {
+  filteredProducts.clear();
+  // If you're storing the selected category as an index
+  selectedCategory.value = -1; // or whatever default value you use
+  enteredTags.clear();
+  selectedMaxPrice.value = 0.0; // Reset to default value
+}
 }

@@ -18,8 +18,8 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       title: json['title'],
-      price: json['price'].toDouble(),
-      rating: json['rating'].toDouble(),
+      price: (json['price'] as num).toDouble(),
+      rating: (json['rating'] as num).toDouble(),
       thumbnail: json['thumbnail'],
       category: json['category'],
       tags: List<String>.from(json['tags']),

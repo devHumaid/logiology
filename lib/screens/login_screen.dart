@@ -5,22 +5,18 @@ import 'package:logiology/controllers/home_controller.dart';
 import '../controllers/login_controller.dart';
 
 class LoginScreen extends StatelessWidget {
-  final loginController = Get.put(LoginController());
   final _formKey = GlobalKey<FormState>();
 
   // Create focus nodes in the controller instead
   LoginScreen({super.key}) {
     // Initialize focus nodes if they don't exist in the controller
-    if (loginController.usernameFocus == null) {
-      loginController.usernameFocus = FocusNode();
-    }
-    if (loginController.passwordFocus == null) {
-      loginController.passwordFocus = FocusNode();
-    }
+
   }
 
   @override
   Widget build(BuildContext context) {
+      final loginController = Get.put(LoginController());
+
     double w = MediaQuery.of(context).size.width;
 
     return GestureDetector(
@@ -110,8 +106,10 @@ class LoginScreen extends StatelessWidget {
 
                             // Username field
                             TextFormField(
-                              controller: loginController.usernameController,
-                              focusNode: loginController.usernameFocus,
+                              controller: loginController
+                                  .usernameController,
+                              focusNode:
+                                  loginController.usernameFocus,
                               textInputAction: TextInputAction
                                   .next, // Important for keyboard behavior
                               validator: (value) {
@@ -173,30 +171,38 @@ class LoginScreen extends StatelessWidget {
 
                             // Sign In Button
                             SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  if (_formKey.currentState!.validate()) {
-                                    loginController.login();
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF4267B2),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: Text(
-                                  "Sign In",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
+  width: double.infinity,
+  height: 50,
+  child: Obx(() {
+    // Check if the loading state is true
+    return ElevatedButton(
+      onPressed: () {
+        if (_formKey.currentState!.validate()) {
+          loginController.login();
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Color(0xFF4267B2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      child: loginController.isLoading.value
+          ? CircularProgressIndicator(
+              color: Colors.white,
+            ) // Show loading indicator
+          : Text(
+              "Sign In",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ), // Show button text
+    );
+  }),
+),
+
                             SizedBox(height: 20),
                           ],
                         ),
